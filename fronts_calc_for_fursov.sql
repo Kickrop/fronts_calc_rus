@@ -374,3 +374,18 @@ select *
 from fronts.cleaned_fronts_jan2020 cfj 
 where front_name = '19 SOLAR-MASS BINARY BLACK HOLE COALESCENCE;22-SOLAR-MASS BINARY BLACK HOLE COALESCENCE;50-SOLAR-MASS BINARY BLACK HOLE COALESCENCE;BINARY BLACK HOLE COALESCENCE;BINARY BLACK HOLE MERGER'
 
+--new query for Kotzemir (см письмо от 08.04.2021)
+select *
+from
+(select front_name,count(distinct accession_number) rus,sum(times_cited::numeric) cited_rus
+from cleaned_fronts_aug2020
+where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
+group by front_name) a
+--natural join
+right join
+(select front_name,count(distinct accession_number) total,sum(times_cited::numeric) cited_total
+from cleaned_fronts_aug2020
+--where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
+group by front_name) b
+on a.front_name = b.front_name
+order by rus desc
