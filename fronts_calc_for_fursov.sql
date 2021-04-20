@@ -2,6 +2,34 @@
 --обработка всех срезов фронтов
 --два варианта запросов: по старому и новому формату
 
+--new query for Kotzemir 20.04.2021
+select * from 
+(
+select b.front_name, b.total, b.cited_total,a.rus,a.cited_rus
+from
+(select front_name,count(distinct accession_number) rus,sum(times_cited::numeric) cited_rus
+from cleaned_fronts_jan2021
+where accession_number in (select distinct accession_number from cleaned_fronts_jan2021 cfa where countries like '%RUSSIA%')
+group by front_name) a
+--natural join
+right join
+(select front_name,count(distinct accession_number) total,sum(times_cited::numeric) cited_total
+from cleaned_fronts_jan2021
+--where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
+group by front_name) b
+on a.front_name = b.front_name
+order by rus desc
+) ab
+natural join 
+--witch author's countries are represented in a front
+(select front_name, array_agg(distinct cntry) cntrys--count(cntry)
+from (
+select front_name, accession_number, authors ,unnest(string_to_array(countries,';')) cntry
+from cleaned_fronts_jan2021
+--where accession_number in (select distinct accession_number from cleaned_fronts_jan2021 cfa where countries like '%RUSSIA%')
+) a
+group by front_name
+) c
 
 --статьи по странам old format общий файл на все срезы
 --create materialized view _0_cnt_fronts_by_cntry as
