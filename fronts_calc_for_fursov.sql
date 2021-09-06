@@ -1,6 +1,39 @@
---14.04.2020
+--актуальность запросов 06.09.2021
 --обработка всех срезов фронтов
 --два варианта запросов: по старому и новому формату
+
+select *
+from cleaned_fronts_aug2021
+where countries = 'RUSSIA;'
+--
+select *
+from cleaned_fronts_aug2021
+where --countries like '%RUSSIA%'
+front_name = '19 SOLAR-MASS BINARY BLACK HOLE COALESCENCE;50-SOLAR-MASS BINARY BLACK HOLE COALESCENCE;22-SOLAR-MASS BINARY BLACK HOLE COALESCENCE;BINARY BLACK HOLE COALESCENCE;BINARY BLACK HOLE MERGER'
+
+--only russian fronts
+select * from 
+(select id_front ,count(distinct accession_number) cnt_ru
+from cleaned_fronts_aug2021
+where countries = 'RUSSIA;'
+group by id_front) a
+natural join 
+(select id_front,count(*) cnt_all
+from cleaned_fronts_aug2021
+group by id_front) b
+where cnt_all = cnt_ru
+
+select * from 
+cleaned_fronts_aug2021
+where id_front in (select id_front from 
+(select id_front ,count(distinct accession_number) cnt_ru
+from cleaned_fronts_aug2021
+where countries = 'RUSSIA;'
+group by id_front) a
+natural join 
+(select id_front,count(*) cnt_all
+from cleaned_fronts_aug2021
+group by id_front) b)
 
 --new query for Kotzemir 20.04.2021
 select * from 
@@ -8,13 +41,13 @@ select * from
 select b.front_name, b.total, b.cited_total,a.rus,a.cited_rus
 from
 (select front_name,count(distinct accession_number) rus,sum(times_cited::numeric) cited_rus
-from cleaned_fronts_jan2021
-where accession_number in (select distinct accession_number from cleaned_fronts_jan2021 cfa where countries like '%RUSSIA%')
+from cleaned_fronts_aug2021
+where accession_number in (select distinct accession_number from cleaned_fronts_aug2021 cfa where countries like '%RUSSIA%')
 group by front_name) a
 --natural join
 right join
 (select front_name,count(distinct accession_number) total,sum(times_cited::numeric) cited_total
-from cleaned_fronts_jan2021
+from cleaned_fronts_aug2021
 --where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
 group by front_name) b
 on a.front_name = b.front_name
@@ -25,8 +58,8 @@ natural join
 (select front_name, array_agg(distinct cntry) cntrys--count(cntry)
 from (
 select front_name, accession_number, authors ,unnest(string_to_array(countries,';')) cntry
-from cleaned_fronts_jan2021
---where accession_number in (select distinct accession_number from cleaned_fronts_jan2021 cfa where countries like '%RUSSIA%')
+from cleaned_fronts_aug2021
+--where accession_number in (select distinct accession_number from cleaned_fronts_aug2021 cfa where countries like '%RUSSIA%')
 ) a
 group by front_name
 ) c
@@ -154,19 +187,26 @@ group by srez,name
 order by srez asc,cnt_rus_art desc
 --
 --
---статьи по странам, новый формат
+--число фронтов
+select count(distinct id_front)
+from cleaned_fronts_aug2021
+
+select *--count(distinct accession_number)
+from cleaned_fronts_aug2021
+where lower(countries) like '%russia%'
+--фронты по странам, новый формат
 with by_cntr as (
 select cntr, count(distinct id_front) front_cnt
-from cleaned_fronts_jan2020, unnest(string_to_array(countries, ';')) cntr
+from cleaned_fronts_aug2021, unnest(string_to_array(countries, ';')) cntr
 where cntr not in ('ENGLAND', 'SCOTLAND', 'WALES', 'NORTHERN IRELAND','')
 group by cntr
 union ALL
 select 'UK', count(distinct front_name)
-from cleaned_fronts_jan2020, unnest(string_to_array(countries, ';')) pam
+from cleaned_fronts_aug2021, unnest(string_to_array(countries, ';')) pam
 where pam in ('ENGLAND', 'SCOTLAND', 'WALES', 'NORTHERN IRELAND')
 )
 select row_number() over(order by front_cnt desc) place,
-cntr, front_cnt, 10996 as total, front_cnt/10996::numeric*100 prcnt 
+cntr, front_cnt, 10813 as total, front_cnt/10813::numeric*100 prcnt 
 from by_cntr 
 order by front_cnt desc
 
@@ -174,7 +214,7 @@ order by front_cnt desc
 --фронты с росс участием
 with art_rus as (
 select *, case when lower(countries) like '%russia%' then 1 end as "is_rus"
-from cleaned_fronts_jan2020
+from cleaned_fronts_aug2021
 )
 select * from
 (select 
@@ -311,7 +351,7 @@ order by srez asc,title
 --фронты по областям 
 with rf as (
 select *, case when lower(countries) like '%russia%' then 1 end as "is_rus"
-from cleaned_fronts_jan2020
+from cleaned_fronts_aug2021
 )
 select * from
 (select 
@@ -329,7 +369,7 @@ order by research_field
 --статьи по областям 
 with rf as (
 select *, case when lower(countries) like '%russia%' then 1 end as "is_rus"
-from cleaned_fronts_jan2020
+from cleaned_fronts_aug2021
 )
 select * from
 (select 
@@ -407,12 +447,12 @@ select *
 from
 (select front_name,count(distinct accession_number) rus,sum(times_cited::numeric) cited_rus
 from cleaned_fronts_aug2020
-where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
+where accession_number in (select distinct accession_number from cleaned_fronts_aug2021 cfa where countries like '%RUSSIA%')
 group by front_name) a
 --natural join
 right join
 (select front_name,count(distinct accession_number) total,sum(times_cited::numeric) cited_total
-from cleaned_fronts_aug2020
+from cleaned_fronts_aug2021
 --where accession_number in (select distinct accession_number from cleaned_fronts_aug2020 cfa where countries like '%RUSSIA%')
 group by front_name) b
 on a.front_name = b.front_name
